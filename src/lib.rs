@@ -126,7 +126,7 @@ impl HandleManager {
                     // XXX either an insertion sort or a heap would probably be better to be honest
                     self.freed.push(handle);
                     let mut jambojuice = &mut self.freed[..];
-                    jambojuice.sort();
+                    jambojuice.sort_unstable();
                     Ok(())
                 } else {
                     // Uh oh. Either double free or invalid free attempt.
