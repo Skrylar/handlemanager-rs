@@ -17,13 +17,18 @@ fn simplest_use() {
 
 #[test]
 fn basic_recycling() {
-    let mut x = HandleManager::new().with_alloc_policy(::AllocPolicy::RecycleLowest);
+    let mut x = HandleManager::new()
+        .with_release_policy(::ReleasePolicy::Tracked)
+        .with_alloc_policy(::AllocPolicy::RecycleLowest);
 
     assert_eq!(x.next(), 0);
     assert_eq!(x.next(), 1);
     assert_eq!(x.next(), 2);
+    assert_eq!(x.next(), 3);
 
+    x.release(3);
     x.release(1);
 
     assert_eq!(x.next(), 1);
+    assert_eq!(x.next(), 3);
 }
