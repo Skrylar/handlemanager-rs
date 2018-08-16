@@ -36,10 +36,13 @@ impl Default for HandleManager {
 }
 
 impl HandleManager {
+    /// Creates a new handle manager with some default settings. You very likely want to change
+    /// these to suit your use case.
     pub fn new() -> Self {
         Default::default()
     }
 
+    /// Changes the allocation policy of handles. Panics if handles have already been issued.
     pub fn with_alloc_policy(mut self, policy: AllocPolicy) -> Self {
         if self.highest_ever.is_some() {
             panic!("Cannot change allocation policy once handles have been dispensed.")
@@ -49,6 +52,7 @@ impl HandleManager {
         self
     }
 
+    /// Changes the release policy of this handle manager. Panics if handles have already been issued.
     pub fn with_release_policy(mut self, policy: ReleasePolicy) -> Self {
         if self.highest_ever.is_some() {
             panic!("Cannot change release policy once handles have been dispensed.")
@@ -65,6 +69,8 @@ impl HandleManager {
         result
     }
 
+    /// Retrieve a handle from the manager. Either generates a new ID if one cannot be recycled,
+    /// or recycles one which was previously valid.
     pub fn next(&mut self, ) -> usize {
         match &self.release_policy {
             ReleasePolicy::DontTrack => self.simple_allocate(),
@@ -83,15 +89,49 @@ impl HandleManager {
         }
     }
 
-    pub fn release(&mut self, handle: usize) {
+    /// Checks if a given ID is currently known to the handle manager. Note that if you are using
+    /// a policy which does not track freed values, this can only check if a handle has never been
+    /// valid to this point.
+    pub fn is_used(&self, id: usize) -> bool {
+        match self.highest_ever {
+            None => false,
+            Some(x) => {
+                match &self.release_policy {
+                    // when we don't track frees, we have to assume almost everything is still valid
+                    ReleasePolicy::DontTrack => {id <= x},
+                    // a little more cimplex
+                    ReleasePolicy::Tracked => {
+                        // if above highest ID ever assigned, can't be valid
+                        if id > x {
+                            return false
+                        }
+                        match self.freed.iter().find(|x| **x == id) {
+                            Some(_) => false,
+                            None => true,
+                        }
+                    },
+                }
+            },
+        }
+    }
+
+    /// Returns a handle to the handle manager. This can fail if the handle was not valid or
+    /// is currently in a free list.
+    pub fn release(&mut self, handle: usize) -> Result<(),()> {
         // TODO think about how double-frees should be handled
         match &self.release_policy {
-            ReleasePolicy::DontTrack => {/* nothing to do */},
+            ReleasePolicy::DontTrack => /* nothing to do */ Ok(()),
             ReleasePolicy::Tracked => {
-                // XXX either an insertion sort or a heap would probably be better to be honest
-                self.freed.push(handle);
-                let mut jambojuice = &mut self.freed[..];
-                jambojuice.sort();
+                if self.is_used(handle) {
+                    // XXX either an insertion sort or a heap would probably be better to be honest
+                    self.freed.push(handle);
+                    let mut jambojuice = &mut self.freed[..];
+                    jambojuice.sort();
+                    Ok(())
+                } else {
+                    // Uh oh. Either double free or invalid free attempt.
+                    Err(())
+                }
             },
         }
     }
