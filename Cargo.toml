@@ -2,5 +2,13 @@
 name = "handletree-rs"
 version = "0.1.0"
 authors = ["Joshua Cearley <joshua.cearley@gmail.com>"]
+repository = "https://github.com/Skrylar/handlemanager-rs"
+description = "Helps you implement handle-based APIs."
+categories = ["algorithms"]
+readme = "README.md"
+license = "BSD-3-Clause"
 
 [dependencies]
+
+[lib]
+name="handlemanager"
