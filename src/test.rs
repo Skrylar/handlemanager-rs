@@ -6,13 +6,13 @@ fn simplest_use() {
         .with_release_policy(::ReleasePolicy::DontTrack)
         .with_alloc_policy(::AllocPolicy::RecycleLowest);
 
-    assert_eq!(x.next(), 0);
-    assert_eq!(x.next(), 1);
-    assert_eq!(x.next(), 2);
+    assert_eq!(x.next().unwrap(), 0);
+    assert_eq!(x.next().unwrap(), 1);
+    assert_eq!(x.next().unwrap(), 2);
 
     assert!(x.release(1).is_ok());
 
-    assert_eq!(x.next(), 3);
+    assert_eq!(x.next().unwrap(), 3);
 }
 
 #[test]
@@ -21,18 +21,18 @@ fn basic_recycling() {
         .with_release_policy(::ReleasePolicy::Tracked)
         .with_alloc_policy(::AllocPolicy::RecycleLowest);
 
-    assert_eq!(x.next(), 0);
-    assert_eq!(x.next(), 1);
-    assert_eq!(x.next(), 2);
-    assert_eq!(x.next(), 3);
+    assert_eq!(x.next().unwrap(), 0);
+    assert_eq!(x.next().unwrap(), 1);
+    assert_eq!(x.next().unwrap(), 2);
+    assert_eq!(x.next().unwrap(), 3);
 
     assert!(x.is_used(3));
     assert!(x.release(3).is_ok());
     assert!(!x.is_used(3));
     assert!(x.release(1).is_ok());
 
-    assert_eq!(x.next(), 1);
-    assert_eq!(x.next(), 3);
+    assert_eq!(x.next().unwrap(), 1);
+    assert_eq!(x.next().unwrap(), 3);
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn double_free() {
         .with_release_policy(::ReleasePolicy::Tracked)
         .with_alloc_policy(::AllocPolicy::RecycleLowest);
 
-    assert_eq!(x.next(), 0);
+    assert_eq!(x.next().unwrap(), 0);
     assert!(x.release(0).is_ok());
     assert!(x.release(0).is_err());
 }

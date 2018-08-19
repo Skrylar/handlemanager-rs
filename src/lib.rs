@@ -62,16 +62,21 @@ impl HandleManager {
         self
     }
 
-    fn simple_allocate(&mut self) -> usize {
+    fn simple_allocate(&mut self) -> Option<usize> {
         let result = self.highest;
-        self.highest += 1;
-        self.highest_ever = Some(result);
-        result
+        // XXX what's the generic-safe way of doing this?
+        if result == std::usize::MAX {
+            None // We're out of IDs!
+        } else {
+            self.highest += 1;
+            self.highest_ever = Some(result);
+            Some(result)
+        }
     }
 
     /// Retrieve a handle from the manager. Either generates a new ID if one cannot be recycled,
     /// or recycles one which was previously valid.
-    pub fn next(&mut self, ) -> usize {
+    pub fn next(&mut self) -> Option<usize> {
         match &self.release_policy {
             ReleasePolicy::DontTrack => self.simple_allocate(),
             ReleasePolicy::Tracked => {
@@ -79,7 +84,7 @@ impl HandleManager {
                     AllocPolicy::NeverRecycle => self.simple_allocate(),
                     AllocPolicy::RecycleLowest => {
                         if self.freed.len() > 0 {
-                            self.freed.remove(0)
+                            Some(self.freed.remove(0))
                         } else {
                             self.simple_allocate()
                         }
